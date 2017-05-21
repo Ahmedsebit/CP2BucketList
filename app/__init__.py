@@ -53,32 +53,10 @@ def create_app(config_name):
             return response, 202
 
 
-    @app.route('/auth/login', methods = ['POST', 'GET'])
-    def login():
-        post_data = request.data
-        email = post_data['email']
-        password = post_data['password']
-        user = User.query.filter_by(email = email).first()
-        
-        if user:
-            try:
-                user_access = verify_password(email,password)
-                if user_access:
-                    token = g.user.generate_auth_token(600)
-                    response = {
-                        'message':'You logged in succesfully',
-                        'token': token.decode('ascii')
-                        }
-                    return response, 200
-                else:
-                    response = {'status_code' : 401}
-                    return response, 401
-            except Exception as e:
-                response = {'status_code' : 401}
-                return response, 200
-        else:
-            response = {'status_code' : 401}
-            return response, 401
+    # @app.route('/auth/login', methods = ['POST', 'GET'])
+    # def login():
+    #     token = g.user.generate_auth_token(600)
+    #     return jsonify({'token': token.decode('ascii'), 'duration': 600})
 
 
 
@@ -95,7 +73,7 @@ def create_app(config_name):
         return True
 
 
-    @app.route('/api/token', methods=['POST', 'GET'])
+    @app.route('/auth/login', methods = ['POST', 'GET'])
     @auth.login_required
     def get_auth_token():
         token = g.user.generate_auth_token(600)
@@ -105,31 +83,43 @@ def create_app(config_name):
     @app.route('/bucketlist/', methods=['POST', 'GET'])
     @auth.login_required
     def bucketlists():
+        user = User.query.filter_by(email = g.user.email).first()
+        user_buckelists_list = []
+        user_buckelists = Bucketlist.query.filter_by(user_id = user.id).all()
+
+        for user_buckelist in user_buckelists:
+            user_buckelists_list.append(user_buckelist)
+
+        user_bucketlist_id = len(user_buckelists_list)+1
+
         if request.method == "POST":
             name = str(request.data.get('name', ''))
             if name:
-                bucketlist = Bucketlist(name=name)
+                bucketlist = Bucketlist(bucketlist_id=user_bucketlist_id, name=name, user_id=user.id)
                 bucketlist.save()
                 response = jsonify({
-                        'id': bucketlist.id,
-                        'name': bucketlist.name,
-                        'date_created': bucketlist.date_created,
-                     'date_modified': bucketlist.date_modified
-                        })
+                    'id': bucketlist.id,
+                    'bucketlist id':bucketlist.bucketlist_id,
+                    'name': bucketlist.name,
+                    'date_created': bucketlist.date_created,
+                    'date_modified': bucketlist.date_modified,
+                    })
                 response.status_code = 201
                 return response
         else:
             # GET
-            bucketlists = Bucketlist.get_all()
+            bucketlists = Bucketlist.get_bucketlist(user.id)
             results = []
 
             for bucketlist in bucketlists:
                 obj = {
                     'id': bucketlist.id,
-                      'name': bucketlist.name,
-                        'date_created': bucketlist.date_created,
-                         'date_modified': bucketlist.date_modified,
-                         }
+                    'bucketlist id':bucketlist.bucketlist_id,
+                    'name': bucketlist.name,
+                    'date_created': bucketlist.date_created,
+                    'date_modified': bucketlist.date_modified,
+                    'User id' : g.user.email
+                    }
                 results.append(obj)
             response = jsonify(results)
             response.status_code = 200
@@ -137,15 +127,29 @@ def create_app(config_name):
 
 
     @app.route('/bucketlist/<int:id>/items/', methods=['POST', 'GET'])
+    @auth.login_required
     def bucketlistsitem(id):
-        bucketlist = Bucketlist.query.filter_by(id=id).first()
-        if not bucketlist:
+
+        user = User.query.filter_by(email = g.user.email).first()
+        user_bucketlist = Bucketlist.query.filter_by(bucketlist_id=id, user_id=user.id).one()
+        item_buckelists = BucketlistItem.query.filter_by(bucketlist_id=user_bucketlist.id).all()
+
+
+        item_list = []
+
+        for i in item_buckelists:
+            item_list.append(i)
+
+        item_bucket_list_id = len(item_list)+1
+
+        if not user_bucketlist:
             # Raise an HTTPException with a 404 not found status code
             abort(404)
         if request.method == "POST":
             name = str(request.data.get('name', ''))
+
             if name:
-                bucketlistitem = BucketlistItem(name=name, bucketlist_id=id)
+                bucketlistitem = BucketlistItem(name=name, item_id=item_bucket_list_id, bucketlist_id=user_bucketlist.id)
                 bucketlistitem.save()
                 response = jsonify({
                     'id': bucketlistitem.id,
@@ -158,7 +162,8 @@ def create_app(config_name):
                 return response
         else:
             # GET
-            bucketlistsitems = BucketlistItem.get_all()
+            # bucketlistsitems = BucketlistItem.get_all()
+            bucketlistsitems = BucketlistItem.get_items(user_bucketlist.id)
             results = []
 
             for bucketlistitem in bucketlistsitems:
@@ -176,19 +181,27 @@ def create_app(config_name):
 
 
     @app.route('/bucketlist/<int:id>', methods=['GET', 'PUT', 'DELETE'])
+    @auth.login_required
     def bucketlist_manipulation(id, **kwargs):
      # retrieve a buckelist using it's ID
-        bucketlist = Bucketlist.query.filter_by(id=id).first()
+        user = User.query.filter_by(email = g.user.email).first()
+        bucketlist = Bucketlist.query.filter_by(bucketlist_id=id, user_id=user.id).first()
         if not bucketlist:
             # Raise an HTTPException with a 404 not found status code
             abort(404)
 
         if request.method == 'DELETE':
+            bucketlistsitems = BucketlistItem.get_items(bucketlist.id)
+            all_user_bucketlists = Bucketlist.get_bucketlist(user.id)
+            for bucketlist_item in all_user_bucketlists:
+                if bucketlist_item.bucketlist_id > id:
+                    bucketlist_item.rearange(bucketlist_item.id)
+            for item in bucketlistsitems:
+                item.delete()
             bucketlist.delete()
             return {
                 "message": "bucketlist {} deleted successfully".format(bucketlist.id)
                 }, 200
-
         elif request.method == 'PUT':
             name = str(request.data.get('name', ''))
             bucketlist.name = name
@@ -214,19 +227,26 @@ def create_app(config_name):
 
 
     @app.route('/bucketlist/<int:id>/items/<int:item_id>', methods=['GET', 'PUT', 'DELETE'])
+    @auth.login_required
     def bucketlistitems_manipulation(id, item_id,  **kwargs):
      # retrieve a buckelist using it's ID
-        bucketlist = Bucketlist.query.filter_by(id=id).first()
+        user = User.query.filter_by(email = g.user.email).first()
+        bucketlist = Bucketlist.query.filter_by(bucketlist_id=id, user_id=user.id).first()
         if not bucketlist:
             # Raise an HTTPException with a 404 not found status code
             abort(404)
 
-        bucketlistitem = BucketlistItem.query.filter_by(id=item_id).first()
+        bucketlistitem = BucketlistItem.query.filter_by(bucketlist_id=bucketlist.id, item_id=item_id).first()
         if not bucketlistitem:
             # Raise an HTTPException with a 404 not found status code
             abort(404)
 
         if request.method == 'DELETE':
+            user_bucketlistitems = BucketlistItem.query.filter_by(bucketlist_id=bucketlist.id).all()
+            for bucketlist_item in user_bucketlistitems:
+                if bucketlist_item.item_id > item_id:
+                    bucketlist_item.rearange(bucketlist_item.id)
+
             bucketlistitem.delete()
             return {
                 "message": "bucketlist item {} deleted successfully".format(bucketlistitem.id)

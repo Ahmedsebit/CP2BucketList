@@ -21,17 +21,29 @@ class Bucketlist(db.Model):
     date_modified = db.Column(db.DateTime, default=db.func.current_timestamp(),onupdate=db.func.current_timestamp())
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
 
-    def __init__(self, name):
+    def __init__(self, name, user_id, bucketlist_id):
         """initialize with name."""
         self.name = name
+        self.user_id = user_id
+        self.bucketlist_id = bucketlist_id
 
     def save(self):
+        db.session.add(self)
+        db.session.commit()
+
+    def rearange(self, id):
+        item = Bucketlist.query.filter_by(id=id).one()
+        item.bucketlist_id -=1
         db.session.add(self)
         db.session.commit()
 
     @staticmethod
     def get_all():
         return Bucketlist.query.all()
+
+    def get_bucketlist(user_id):
+        return Bucketlist.query.filter_by(user_id = user_id).all()
+
 
     def delete(self):
         db.session.delete(self)
@@ -54,17 +66,28 @@ class BucketlistItem(db.Model):
     date_modified = db.Column(db.DateTime, default=db.func.current_timestamp(),onupdate=db.func.current_timestamp())
     bucketlist_id = db.Column(db.Integer, db.ForeignKey('bucketlists.id'))
 
-    def __init__(self, name, bucketlist_id):
+    def __init__(self, item_id, name, bucketlist_id):
         """initialize with name."""
         self.name = name
+        self.bucketlist_id = bucketlist_id
+        self.item_id = item_id
 
     def save(self):
+        db.session.add(self)
+        db.session.commit()
+
+    def rearange(self, id):
+        item = BucketlistItem.query.filter_by(id=id).one()
+        item.item_id -=1
         db.session.add(self)
         db.session.commit()
 
     @staticmethod
     def get_all():
         return BucketlistItem.query.all()
+
+    def get_items(bucketlist_id ):
+        return BucketlistItem.query.filter_by(bucketlist_id = bucketlist_id).all()
 
     def delete(self):
         db.session.delete(self)
@@ -109,53 +132,4 @@ class User(db.Model):
         user = User.query.get(data['id'])
         return user
 
-    # def __init__(self, email, password):
-    #     """Initialize the user with an email and a password."""
-    #     self.email = email
-    #     self.password = Bcrypt().generate_password_hash(password).decode()
-
-    # def password_is_valid(self, password):
-    #     """
-    #     Checks the password against it's hash to validates the user's password
-    #     """
-    #     return Bcrypt().check_password_hash(self.password, password)
-
-    # def save(self):
-    #     """Save a user to the database.
-    #     This includes creating a new user and editing one.
-    #     """
-    #     db.session.add(self)
-    #     db.session.commit()
-
-    # def generate_token(self, user_id):
-    #     """Generates the access token to be used as the Authorization header"""
-
-    #     try:
-    #         # set up a payload with an expiration time
-    #         payload = {
-    #             'exp': datetime.utcnow() + timedelta(minutes=5),
-    #             'iat': datetime.utcnow(),
-    #             'sub': user_id
-    #         }
-    #         # encode the payload to get an byte string token
-    #         jwt_string = jwt.encode(
-    #             payload,
-    #             current_app.config.get('SECRET'),
-    #             algorithm='HS256'
-    #         )
-    #         return jwt_string
-
-    #     except Exception as e:
-    #         # return an error in string format if an exception occurs
-    #         return str(e)
-
-    # @staticmethod
-    # def decode_token(token):
-    #     """Decode the access token from the Authorization header."""
-    #     try:
-    #         payload = jwt.decode(token, current_app.config.get('SECRET'))
-    #         return payload['sub']
-    #     except jwt.ExpiredSignatureError:
-    #         return "Expired token. Please log in to get a new token"
-    #     except jwt.InvalidTokenError:
-    #         return "Invalid token. Please register or login"
+   
