@@ -108,22 +108,62 @@ def create_app(config_name):
                 return response
         else:
             # GET
-            bucketlists = Bucketlist.get_bucketlist(user.id)
-            results = []
+            q = request.args.get('q')
+            limit = request.args.get('limit')
+            if q:
+                bucketlists = Bucketlist.query.filter_by(name=q, user_id=user.id)
+                results = []
 
-            for bucketlist in bucketlists:
-                obj = {
-                    'id': bucketlist.id,
-                    'bucketlist id':bucketlist.bucketlist_id,
-                    'name': bucketlist.name,
-                    'date_created': bucketlist.date_created,
-                    'date_modified': bucketlist.date_modified,
-                    'User id' : g.user.email
-                    }
-                results.append(obj)
-            response = jsonify(results)
-            response.status_code = 200
-            return response
+                for bucketlist in bucketlists:
+                    obj = {
+                        'id': bucketlist.id,
+                        'bucketlist id':bucketlist.bucketlist_id,
+                        'name': bucketlist.name,
+                        'date_created': bucketlist.date_created,
+                        'date_modified': bucketlist.date_modified,
+                        'User id' : g.user.email
+                        }
+                    results.append(obj)
+                response = jsonify(results)
+                response.status_code = 200
+                return response
+
+            elif limit:
+                bucketlists = Bucketlist.query.filter_by(name=q, user_id=user.id)
+                results = []
+
+                for bucketlist in bucketlists:
+                    obj = {
+                        'id': bucketlist.id,
+                        'bucketlist id':bucketlist.bucketlist_id,
+                        'name': bucketlist.name,
+                        'date_created': bucketlist.date_created,
+                        'date_modified': bucketlist.date_modified,
+                        'User id' : g.user.email
+                        }
+                    results.append(obj)
+                response = jsonify(results)
+                response.status_code = 200
+                return response
+
+            else:
+                bucketlists = Bucketlist.get_bucketlist(user.id)
+                results = []
+
+                for bucketlist in bucketlists:
+                    obj = {
+                        'id': bucketlist.id,
+                        'bucketlist id':bucketlist.bucketlist_id,
+                        'name': bucketlist.name,
+                        'date_created': bucketlist.date_created,
+                        'date_modified': bucketlist.date_modified,
+                        'User id' : g.user.email
+                        }
+                    results.append(obj)
+                response = jsonify(results)
+                response.status_code = 200
+                return response
+
 
 
     @app.route('/bucketlist/<int:id>/items/', methods=['POST', 'GET'])
