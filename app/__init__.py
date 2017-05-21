@@ -110,6 +110,7 @@ def create_app(config_name):
             # GET
             q = request.args.get('q')
             limit = request.args.get('limit')
+            page = request.args.get('page')
             if q:
                 bucketlists = Bucketlist.query.filter_by(name=q, user_id=user.id)
                 results = []
@@ -142,13 +143,28 @@ def create_app(config_name):
                         'User id' : g.user.email
                         }
                     results.append(obj)
-                response = jsonify(results)
-                response.status_code = 200
-                return response
+                if page:
+                    old_page = page - 1
+                    old_limit = old_page * limit
+                    next_limit = page * limit
+                    if len(results) > next_limit:
+                        new_page = results[old_limit:next_limit]
+                        response = jsonify(new_page)
+                        response.status_code = 200
+                        return response
+                    elif len(results) > old_limit and len(results) < new_limit:
+                        new_page = results[old_limit:]
+                        response = jsonify(new_page)
+                        response.status_code = 200
+                        return response
+                    else:
+                        return 404
+
 
             else:
                 bucketlists = Bucketlist.get_bucketlist(user.id)
                 results = []
+                limit = 20
 
                 for bucketlist in bucketlists:
                     obj = {
@@ -160,9 +176,30 @@ def create_app(config_name):
                         'User id' : g.user.email
                         }
                     results.append(obj)
-                response = jsonify(results)
-                response.status_code = 200
-                return response
+                if page:
+                    if page.isdigit():
+                        old_page = int(page) - 1
+                        old_limit = old_page * limit
+                        next_limit = int(page) * limit
+                        if len(results) > next_limit:
+                            new_page = results[old_limit:next_limit]
+                            response = jsonify(new_page)
+                            response.status_code = 200
+                            return response
+                        elif len(results) > old_limit and len(results) < next_limit:
+                            new_page = results[old_limit:]
+                            response = jsonify(new_page)
+                            response.status_code = 200
+                            return response
+                        else:
+                            return 404
+                    else:
+                        return 404
+                else:
+                    this_page = results[:limit]
+                    response = jsonify(this_page)
+                    response.status_code = 200
+                    return response
 
 
 
