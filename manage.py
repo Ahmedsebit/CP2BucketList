@@ -7,6 +7,16 @@ from app import models
 app = create_app(config_name=os.getenv('APP_SETTINGS'))
 migrate = Migrate(app, db)
 manager = Manager(app)
+# createdb = db.create_all()
+# dropdb = db.drop_all()
+
+@manager.command
+def createdb():
+    db.create_all()
+
+@manager.command
+def dropdb():
+    db.drop_all()
 
 manager.add_command('db', MigrateCommand)
 

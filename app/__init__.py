@@ -53,13 +53,6 @@ def create_app(config_name):
             return response, 202
 
 
-    # @app.route('/auth/login', methods = ['POST', 'GET'])
-    # def login():
-    #     token = g.user.generate_auth_token(600)
-    #     return jsonify({'token': token.decode('ascii'), 'duration': 600})
-
-
-
     @auth.verify_password
     def verify_password(email_or_token, password):
         # first try to authenticate by token
@@ -86,6 +79,7 @@ def create_app(config_name):
         user = User.query.filter_by(email = g.user.email).first()
         user_buckelists_list = []
         user_buckelists = Bucketlist.query.filter_by(user_id = user.id).all()
+        
 
         for user_buckelist in user_buckelists:
             user_buckelists_list.append(user_buckelist)
@@ -122,7 +116,7 @@ def create_app(config_name):
                         'name': bucketlist.name,
                         'date_created': bucketlist.date_created,
                         'date_modified': bucketlist.date_modified,
-                        'User id' : g.user.email
+                        'User id': g.user.email,
                         }
                     results.append(obj)
                 response = jsonify(results)
@@ -140,23 +134,26 @@ def create_app(config_name):
                         'name': bucketlist.name,
                         'date_created': bucketlist.date_created,
                         'date_modified': bucketlist.date_modified,
-                        'User id' : g.user.email
+                        'User id' : g.user.email,
                         }
                     results.append(obj)
                 if page:
-                    old_page = page - 1
-                    old_limit = old_page * limit
-                    next_limit = page * limit
-                    if len(results) > next_limit:
-                        new_page = results[old_limit:next_limit]
-                        response = jsonify(new_page)
-                        response.status_code = 200
-                        return response
-                    elif len(results) > old_limit and len(results) < new_limit:
-                        new_page = results[old_limit:]
-                        response = jsonify(new_page)
-                        response.status_code = 200
-                        return response
+                    if page.isdigit():
+                        old_page = page - 1
+                        old_limit = old_page * limit
+                        next_limit = page * limit
+                        if len(results) > next_limit:
+                            new_page = results[old_limit:next_limit]
+                            response = jsonify(new_page)
+                            response.status_code = 200
+                            return response
+                        elif len(results) > old_limit and len(results) < next_limit:
+                            new_page = results[old_limit:]
+                            response = jsonify(new_page)
+                            response.status_code = 200
+                            return response
+                        else:
+                            return 404
                     else:
                         return 404
 
@@ -167,13 +164,22 @@ def create_app(config_name):
                 limit = 20
 
                 for bucketlist in bucketlists:
+                    bucketlistresults = []
+                    bucketlistsitems = BucketlistItem.get_items(bucketlist.id)
+                    for bucketlistitem in bucketlistsitems:
+                        obj = {
+                            'id': bucketlistitem.id,
+                            'name': bucketlistitem.name,
+                            'bucketlist' : bucketlistitem.bucketlist_id
+                            }
+                        bucketlistresults.append(obj)
                     obj = {
-                        'id': bucketlist.id,
                         'bucketlist id':bucketlist.bucketlist_id,
                         'name': bucketlist.name,
+                        'items':bucketlistresults,
                         'date_created': bucketlist.date_created,
                         'date_modified': bucketlist.date_modified,
-                        'User id' : g.user.email
+                        'Created By' : g.user.email,
                         }
                     results.append(obj)
                 if page:

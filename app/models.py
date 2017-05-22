@@ -55,7 +55,6 @@ class Bucketlist(db.Model):
 
 class BucketlistItem(db.Model):
     """This class represents the bucketlist items table."""
-    
 
     __tablename__ = 'bucketlistsitems'
 
