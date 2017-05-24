@@ -76,8 +76,7 @@ class BucketlistTestCase(unittest.TestCase):
         '''
         Test user registration works correcty.
         '''
-        new_user = {'email': 'newuser@email.com', 'password': 'password'}
-        user_multiple_registration = self.client().post('/auth/register', data=new_user)
+        user_multiple_registration = self.register_user()
         self.assertEqual(user_multiple_registration.status_code, 200)
 
 
@@ -85,24 +84,28 @@ class BucketlistTestCase(unittest.TestCase):
         '''
         Test that a user cannot be registered twice.
         '''
-        user_data = {'email': 'user@email.com', 'password': 'password'}
-        user_multiple_registration = self.client().post('/auth/register', data=user_data)
+        self.register_user()
+        user_data = {'email':"user@test.com", 'password':"test1234"}
+        user_multiple_registration = self.client().post('/auth/register',
+                                                        data=json.dumps(user_data),
+                                                        content_type='application/json')
         self.assertEqual(user_multiple_registration.status_code, 200)
 
 
     def test_user_login(self):
-        """Test registered user can login."""
-        new_user = {'email': 'newuser@email.com', 'password': 'password'}
-        self.client().post('/auth/register', data=new_user)
-        login_res = self.client().post('/auth/login', data=new_user)
+        '''
+        Test registered user can login.
+        '''
+        login_res = self.login_user()
         self.assertEqual(login_res.status_code, 200)
 
 
-    # def test_non_registered_user_login(self):
-    #     """Test non registered users cannot login."""
-    #     not_a_user = {'email': 'not_a_user@example.com','password': 'nope'}
-    #     res = self.client().post('/api/token')
-    #     self.assertEqual(res.status_code, 401)
+    def test_non_registered_user_login(self):
+        """Test non registered users cannot login."""
+        not_a_user = {'email': 'not_a_user@example.com','password': 'nope'}
+        self.register_user()
+        res = self.client().post('/auth/login', data=json.dumps(not_a_user))
+        self.assertEqual(res.status_code, 401)
 
     # def test_no_password_registered_user_login(self):
     #     """Test registered user can login."""
@@ -123,6 +126,7 @@ class BucketlistTestCase(unittest.TestCase):
                                            headers={'Authorization': self.auth_token})
         self.assertEqual(post_response.status_code, 201)
 
+
     def test_post_bucketlist_unauth(self):
         '''
         Test for checking unauthorized user creating a main list called bucketlists. The function
@@ -139,7 +143,7 @@ class BucketlistTestCase(unittest.TestCase):
     def test_post_bucketlist_existing(self):
         '''
         Test for unauthorized user creating an existing item that already exitsts. The function
-        should return status [202] and a [item already exists] message.
+        should return status [400] and a [item already exists] message.
         '''
         self.post_bucketlist()
         response = self.post_bucketlist()
@@ -196,7 +200,7 @@ class BucketlistTestCase(unittest.TestCase):
         response = self.login_user()
         response_data = json.loads(response.data.decode())
         auth_token = response_data['access_token']
-        response = self.client().get('/bucketlist/1/items/',
+        response = self.client().get('/bucketlist/',
                                      content_type='application/json',
                                      headers={'Authorization': auth_token})
         self.assertEqual(response.status_code, 200)
@@ -233,9 +237,8 @@ class BucketlistTestCase(unittest.TestCase):
 
     def test_get_bucketlist_item_unauth(self):
         """
-        Bucketlist item GET request API functionality test. The test checks if an item in the
-        bucketlist can be retrieved by its id through the GET request. The test returns 200
-        for succesful retrieveing.
+        Bucketlist item unauth GET request API functionality test. The test checks if an item in the
+        bucketlist can be retrieved by its id through the GET request. The test returns 401
         """
         self.post_bucketlist()
         self.post_item_bucketlist()
@@ -251,9 +254,8 @@ class BucketlistTestCase(unittest.TestCase):
 
     def test_get_bucketlist_item_notfound(self):
         """
-        Bucketlist item GET request API functionality test. The test checks if an item in the
-        bucketlist can be retrieved by its id through the GET request. The test returns 200
-        for succesful retrieveing.
+        Bucketlist item not found GET request API functionality test. The test checks if an item in the
+        bucketlist can be retrieved by its id through the GET request. The test returns 404
         """
         self.post_bucketlist()
         self.post_item_bucketlist()
@@ -288,9 +290,8 @@ class BucketlistTestCase(unittest.TestCase):
 
     def test_get_bucketlistitem_item_unauthorised(self):
         """
-        Bucketlist item GET request API functionality test. The test checks if an item in the
-        bucketlist can be retrieved by its id through the GET request. The test returns 200
-        for succesful retrieveing.
+        Bucketlist unauth item GET request API functionality test. The test checks if an item in the
+        bucketlist can be retrieved by its id through the GET request. The test returns 401
         """
         self.post_bucketlist()
         self.post_item_bucketlist()
@@ -307,9 +308,8 @@ class BucketlistTestCase(unittest.TestCase):
 
     def test_get_bucketlistitem_item_notfound(self):
         """
-        Bucketlist item GET request API functionality test. The test checks if an item in the
-        bucketlist can be retrieved by its id through the GET request. The test returns 200
-        for succesful retrieveing.
+        Bucketlist item not found GET request API functionality test. The test checks if an item in the
+        bucketlist can be retrieved by its id through the GET request. The test returns 404.
         """
         self.post_bucketlist()
         self.post_item_bucketlist()
@@ -325,9 +325,8 @@ class BucketlistTestCase(unittest.TestCase):
 
     def test_get_bucketlistitem_item_bucketlistnotfound(self):
         """
-        Bucketlist item GET request API functionality test. The test checks if an item in the
-        bucketlist can be retrieved by its id through the GET request. The test returns 200
-        for succesful retrieveing.
+        Bucketlist not found item GET request API functionality test. The test checks if an item in the
+        bucketlist can be retrieved by its id through the GET request. The test returns 404
         """
         self.post_bucketlist()
         self.post_item_bucketlist()
@@ -344,9 +343,8 @@ class BucketlistTestCase(unittest.TestCase):
 
     def test_put_bucketlist(self):
         """
-        Bucketlist item GET request API functionality test. The test checks if an item in the
-        bucketlist can be retrieved by its id through the GET request. The test returns 200
-        for succesful retrieveing.
+        Bucketlist item PUT request API functionality test. The test checks if an item in the
+        bucketlist can be retrieved by its id through the PUT request. The test returns 200
         """
         self.post_bucketlist()
         self.post_item_bucketlist()
@@ -364,9 +362,8 @@ class BucketlistTestCase(unittest.TestCase):
 
     def test_put_bucketlist_unauth(self):
         """
-        Bucketlist item GET request API functionality test. The test checks if an item in the
-        bucketlist can be retrieved by its id through the GET request. The test returns 200
-        for succesful retrieveing.
+        Bucketlist unauth PUT request API functionality test. The test checks if an item in the
+        bucketlist can be retrieved by its id through the PUT request. The test returns 401
         """
         self.post_bucketlist()
         self.post_item_bucketlist()
@@ -384,9 +381,8 @@ class BucketlistTestCase(unittest.TestCase):
 
     def test_put_bucketlist_notfound(self):
         """
-        Bucketlist item GET request API functionality test. The test checks if an item in the
-        bucketlist can be retrieved by its id through the GET request. The test returns 200
-        for succesful retrieveing.
+        Bucketlist not found PUT request API functionality test. The test checks if an item in the
+        bucketlist can be retrieved by its id through the GET request. The test returns 404
         """
         self.post_bucketlist()
         self.post_item_bucketlist()
@@ -404,8 +400,8 @@ class BucketlistTestCase(unittest.TestCase):
 
     def test_put_bucketlist_item(self):
         """
-        Bucketlist item GET request API functionality test. The test checks if an item in the
-        bucketlist can be retrieved by its id through the GET request. The test returns 200
+        Bucketlist item PUT request API functionality test. The test checks if an item in the
+        bucketlist can be retrieved by its id through the PUT request. The test returns 200
         for succesful retrieveing.
         """
         self.post_bucketlist()
@@ -425,9 +421,8 @@ class BucketlistTestCase(unittest.TestCase):
 
     def test_put_bucketlist_item_unauth(self):
         """
-        Bucketlist item GET request API functionality test. The test checks if an item in the
-        bucketlist can be retrieved by its id through the GET request. The test returns 200
-        for succesful retrieveing.
+        Bucketlist unauth item PUT request API functionality test. The test checks if an item in the
+        bucketlist can be retrieved by its id through the PUT request. The test returns 200
         """
         self.post_bucketlist()
         self.post_item_bucketlist()
@@ -446,9 +441,8 @@ class BucketlistTestCase(unittest.TestCase):
 
     def test_put_bucketlist_item_notfound(self):
         """
-        Bucketlist item GET request API functionality test. The test checks if an item in the
-        bucketlist can be retrieved by its id through the GET request. The test returns 200
-        for succesful retrieveing.
+        Bucketlist item not found PUT request API functionality test. The test checks if an item in the
+        bucketlist can be retrieved by its id through the PUT request. The test returns 200
         """
         self.post_bucketlist()
         self.post_item_bucketlist()
@@ -464,11 +458,11 @@ class BucketlistTestCase(unittest.TestCase):
                                    headers={'Authorization': auth_token})
         self.assertEqual(result.status_code, 404)
 
+
     def test_put_bucketlist_item_bucketlistnotfound(self):
         """
-        Bucketlist item GET request API functionality test. The test checks if an item in the
-        bucketlist can be retrieved by its id through the GET request. The test returns 200
-        for succesful retrieveing.
+        Bucketlist not found item PUT request API functionality test. The test checks if an item in the
+        bucketlist can be retrieved by its id through the GET request. The test returns PUT
         """
         self.post_bucketlist()
         self.post_item_bucketlist()
@@ -487,9 +481,8 @@ class BucketlistTestCase(unittest.TestCase):
 
     def test_delete_bucketlist(self):
         """
-        Bucketlist item GET request API functionality test. The test checks if an item in the
-        bucketlist can be retrieved by its id through the GET request. The test returns 200
-        for succesful retrieveing.
+        Bucketlist DELETE request API functionality test. The test checks if an item in the
+        bucketlist can be retrieved by its id through the DELETE request. The test returns 200
         """
         self.post_bucketlist()
         self.post_item_bucketlist()
@@ -507,9 +500,8 @@ class BucketlistTestCase(unittest.TestCase):
 
     def test_delete_bucketlist_unauth(self):
         """
-        Bucketlist item GET request API functionality test. The test checks if an item in the
-        bucketlist can be retrieved by its id through the GET request. The test returns 200
-        for succesful retrieveing.
+        Bucketlist DELETE request API functionality test. The test checks if an item in the
+        bucketlist can be retrieved by its id through the DELETE request. The test returns 401
         """
         self.post_bucketlist()
         self.post_item_bucketlist()
@@ -527,9 +519,8 @@ class BucketlistTestCase(unittest.TestCase):
 
     def test_delete_bucketlist_notfound(self):
         """
-        Bucketlist item GET request API functionality test. The test checks if an item in the
-        bucketlist can be retrieved by its id through the GET request. The test returns 200
-        for succesful retrieveing.
+        Bucketlist not found DELETE request API functionality test. The test checks if an item in the
+        bucketlist can be retrieved by its id through the DELETE request. The test returns 404
         """
         self.post_bucketlist()
         self.post_item_bucketlist()
@@ -547,9 +538,8 @@ class BucketlistTestCase(unittest.TestCase):
 
     def test_delete_bucketlist_item(self):
         """
-        Bucketlist item GET request API functionality test. The test checks if an item in the
-        bucketlist can be retrieved by its id through the GET request. The test returns 200
-        for succesful retrieveing.
+        Bucketlist item DELETE request API functionality test. The test checks if an item in the
+        bucketlist can be retrieved by its id through the DELETE request. The test returns 200
         """
         self.post_bucketlist()
         self.post_item_bucketlist()
@@ -568,8 +558,8 @@ class BucketlistTestCase(unittest.TestCase):
 
     def test_delete_bucketlist_item_unauth(self):
         """
-        Bucketlist item GET request API functionality test. The test checks if an item in the
-        bucketlist can be retrieved by its id through the GET request. The test returns 200
+        Bucketlist unauth item DELETE request API functionality test. The test checks if an item in the
+        bucketlist can be retrieved by its id through the DELETE request. The test returns 401
         for succesful retrieveing.
         """
         self.post_bucketlist()
@@ -589,9 +579,8 @@ class BucketlistTestCase(unittest.TestCase):
 
     def test_delete_bucketlist_item_notfound(self):
         """
-        Bucketlist item GET request API functionality test. The test checks if an item in the
-        bucketlist can be retrieved by its id through the GET request. The test returns 200
-        for succesful retrieveing.
+        Bucketlist item not found DELETE request API functionality test. The test checks if an item in the
+        bucketlist can be retrieved by its id through the DELETE request. The test returns 404
         """
         self.post_bucketlist()
         self.post_item_bucketlist()
@@ -610,9 +599,8 @@ class BucketlistTestCase(unittest.TestCase):
 
     def test_delete_bucketlist_item_backetlistnotfound(self):
         """
-        Bucketlist item GET request API functionality test. The test checks if an item in the
-        bucketlist can be retrieved by its id through the GET request. The test returns 200
-        for succesful retrieveing.
+        Bucketlist not found item DELETE request API functionality test. The test checks if an item in the
+        bucketlist can be retrieved by its id through the DELETE request. The test returns 404
         """
         self.post_bucketlist()
         self.post_item_bucketlist()
@@ -631,7 +619,7 @@ class BucketlistTestCase(unittest.TestCase):
 
     def test_find_bucketlist(self):
         """
-        Bucketlist item GET request API functionality test. The test checks if an item in the
+        Bucketlist FIND request API functionality test. The test checks if an item in the
         bucketlist can be retrieved by its id through the GET request. The test returns 200
         for succesful retrieveing.
         """
@@ -651,8 +639,8 @@ class BucketlistTestCase(unittest.TestCase):
 
     def test_find_bucketlist_unauth(self):
         """
-        Bucketlist item GET request API functionality test. The test checks if an item in the
-        bucketlist can be retrieved by its id through the GET request. The test returns 200
+        Bucketlist item unauth FIND request API functionality test. The test checks if an item in the
+        bucketlist can be retrieved by its id through the GET request. The test returns 401
         for succesful retrieveing.
         """
         self.post_bucketlist()
@@ -671,7 +659,7 @@ class BucketlistTestCase(unittest.TestCase):
 
     def test_find_bucketlist_notfound(self):
         """
-        Bucketlist item GET request API functionality test. The test checks if an item in the
+        Bucketlist item not found FIND request API functionality test. The test checks if an item in the
         bucketlist can be retrieved by its id through the GET request. The test returns 200
         for succesful retrieveing.
         """
