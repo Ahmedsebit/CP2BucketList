@@ -67,7 +67,7 @@ def create_app(config_name):
                 if access_token:
                     response = jsonify({
                         'message': 'You logged in successfully.',
-                        'access_token': access_token.decode()
+                        'access_token': User.decode_token(access_token)
                     })
                     return response
             else:
