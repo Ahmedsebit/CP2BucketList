@@ -1,17 +1,14 @@
-machine:
-  python:
-    version: 3.6.1
+language: python
 
-dependencies:
-  post:
-    - pip install -r requirements.txt
+python:
+  - "3.6"
 
-test:
-  override:
-    - createdb;
-    - createdb;
-    - rm -rf migrations
-    - python manage.py databases init
-    - python manage.py databases migrate
-    - python manage.py databases upgrade
-    - nosetests
+install:
+  - pip install -r requirements.txt
+  - pip install coveralls
+
+before_script:
+  - psql -c 'create database test_bucketlist_db;' -U postgres
+
+script:
+  - nosetests --with-coverage
