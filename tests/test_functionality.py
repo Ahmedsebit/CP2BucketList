@@ -14,26 +14,21 @@ class BucketlistTestCase(unittest.TestCase):
         '''
         self.app = create_app(config_name="testing")
         self.client = self.app.test_client
-        self.bucketlist = {'name': 'Go to Borabora for vacation'}
-        user_data = {'email': 'user@email.com', 'password': 'password'}
         with self.app.app_context():
             db.session.close()
             db.drop_all()
             db.create_all()
-        self.client().post('/auth/register', data=user_data)
-        response = self.client().post('/auth/login', data=user_data)
-        response_data = json.loads(response.data.decode())
-        self.auth_token = response_data['access_token']
+        
 
 
     def register_user(self, email="user@test.com", password="test1234"):
         user_data = {'email': email, 'password': password}
-        return self.client().post('/auth/register', data=user_data)
+        return self.client().post('/api/v1/auth/register', data=user_data)
 
 
     def login_user(self, email="user@test.com", password="test1234"):
         user_data = {'email': email,'password': password}
-        return self.client().post('/auth/login', data=user_data)
+        return self.client().post('/api/v1/auth/login', data=user_data)
 
 
     def post_bucketlist(self, name="new_item"):
@@ -43,7 +38,7 @@ class BucketlistTestCase(unittest.TestCase):
         self.auth_token = response_data['access_token']
 
         name = name
-        return self.client().post('/bucketlist/', data=json.dumps({"name": name}),
+        return self.client().post('/api/v1/bucketlist/', data=json.dumps({"name": name}),
                                   content_type='application/json',
                                   headers={'Authorization': self.auth_token})
 
@@ -55,7 +50,7 @@ class BucketlistTestCase(unittest.TestCase):
         self.auth_token = response_data['access_token']
 
         name = name
-        return self.client().post('/bucketlist/1/items/', data=json.dumps({"name": name}),
+        return self.client().post('/api/v1/bucketlist/1/items/', data=json.dumps({"name": name}),
                                   content_type='application/json',
                                   headers={'Authorization': self.auth_token})
 
@@ -67,14 +62,14 @@ class BucketlistTestCase(unittest.TestCase):
         self.auth_token = response_data['access_token']
 
         name = name
-        return self.client().post('/bucketlist/2/items/', data=json.dumps({"name": name}),
+        return self.client().post('/api/v1/bucketlist/2/items/', data=json.dumps({"name": name}),
                                   content_type='application/json',
                                   headers={'Authorization': self.auth_token})
 
 
     def test_user_registration(self):
         '''
-        Test user registration works correcty.
+        Test user registration works correctly.
         '''
         user_multiple_registration = self.register_user()
         self.assertEqual(user_multiple_registration.status_code, 200)
@@ -86,7 +81,7 @@ class BucketlistTestCase(unittest.TestCase):
         '''
         self.register_user()
         user_data = {'email':"user@test.com", 'password':"test1234"}
-        user_multiple_registration = self.client().post('/auth/register',
+        user_multiple_registration = self.client().post('/api/v1/auth/register',
                                                         data=json.dumps(user_data),
                                                         content_type='application/json')
         self.assertEqual(user_multiple_registration.status_code, 200)
@@ -102,17 +97,10 @@ class BucketlistTestCase(unittest.TestCase):
 
     def test_non_registered_user_login(self):
         """Test non registered users cannot login."""
-        not_a_user = {'email': 'not_a_user@example.com','password': 'nope'}
+        not_a_user = {'email': 'not_a_user@example.com', 'password': 'nope'}
         self.register_user()
-        res = self.client().post('/auth/login', data=json.dumps(not_a_user))
+        res = self.client().post('/api/v1/auth/login', data=json.dumps(not_a_user))
         self.assertEqual(res.status_code, 401)
-
-    # def test_no_password_registered_user_login(self):
-    #     """Test registered user can login."""
-    #     self.user_data = {'email': 'user@email.com','password': ''}
-    #     self.client().post('/auth/register', data=self.user_data)
-    #     login_res= self.client().post('/auth/login', data=self.user_data)
-    #     self.assertEqual(login_res.status_code, 401)
 
 
     def test_post_bucketlist(self):
@@ -120,7 +108,7 @@ class BucketlistTestCase(unittest.TestCase):
         Bucketlist (POST request) API functionality test. The test checks if the a new item can be
         created as a new bucketlist. The test returns 201 for succesful creation.
         '''
-        post_response = self.client().post('/bucketlist/',
+        post_response = self.client().post('/api/v1/bucketlist/',
                                            data=json.dumps({"name": "new stuff"}),
                                            content_type='application/json',
                                            headers={'Authorization': self.auth_token})
@@ -133,7 +121,7 @@ class BucketlistTestCase(unittest.TestCase):
         should return status [401].
         '''
         item = {'name': 'Start a business'}
-        new_entry = self.client().post('/bucketlist/',
+        new_entry = self.client().post('/api/v1/bucketlist/',
                                        data=item,
                                        content_type='application/json',
                                        headers={'Authorization': 'self.auth_token'})
@@ -165,7 +153,7 @@ class BucketlistTestCase(unittest.TestCase):
         status [401] and a [Unauthorized user] message.
         '''
         name = 'item'
-        response = self.client().post('/bucketlist/1/items/', data=json.dumps({"name": name}),
+        response = self.client().post('/api/v1/bucketlist/1/items/', data=json.dumps({"name": name}),
                                       content_type='application/json',
                                       headers={'Authorization': 'self.auth_token'})
         self.assertEqual(response.status_code, 401)
@@ -200,7 +188,7 @@ class BucketlistTestCase(unittest.TestCase):
         response = self.login_user()
         response_data = json.loads(response.data.decode())
         auth_token = response_data['access_token']
-        response = self.client().get('/bucketlist/',
+        response = self.client().get('/api/v1/bucketlist/',
                                      content_type='application/json',
                                      headers={'Authorization': auth_token})
         self.assertEqual(response.status_code, 200)
@@ -211,7 +199,7 @@ class BucketlistTestCase(unittest.TestCase):
         Test for unauthorized user getting main list bucketlists which has items. The
         function should return status |401| and a [Unathorized User] message.
         '''
-        results = self.client().get('/bucketlist/',
+        results = self.client().get('/api/v1/bucketlist/',
                                     content_type='application/json',
                                     headers={'Authorization': 'auth_token'})
         self.assertEqual(results.status_code, 401)
@@ -229,7 +217,7 @@ class BucketlistTestCase(unittest.TestCase):
         response = self.login_user()
         response_data = json.loads(response.data.decode())
         auth_token = response_data['access_token']
-        result = self.client().get('/bucketlist/1',
+        result = self.client().get('/api/v1/bucketlist/1',
                                    content_type='application/json',
                                    headers={'Authorization': auth_token})
         self.assertEqual(result.status_code, 200)
@@ -246,7 +234,7 @@ class BucketlistTestCase(unittest.TestCase):
         response = self.login_user()
         response_data = json.loads(response.data.decode())
         auth_token = response_data['access_token']
-        result = self.client().get('/bucketlist/1',
+        result = self.client().get('/api/v1/bucketlist/1',
                                    content_type='application/json',
                                    headers={'Authorization': 'auth_token'})
         self.assertEqual(result.status_code, 401)
@@ -263,7 +251,7 @@ class BucketlistTestCase(unittest.TestCase):
         response = self.login_user()
         response_data = json.loads(response.data.decode())
         auth_token = response_data['access_token']
-        result = self.client().get('/bucketlist/56',
+        result = self.client().get('/api/v1/bucketlist/56',
                                    content_type='application/json',
                                    headers={'Authorization': auth_token})
         self.assertEqual(result.status_code, 404)
@@ -282,7 +270,7 @@ class BucketlistTestCase(unittest.TestCase):
         response = self.login_user()
         response_data = json.loads(response.data.decode())
         auth_token = response_data['access_token']
-        result = self.client().get('/bucketlist/1/items/1',
+        result = self.client().get('/api/v1/bucketlist/1/items/1',
                                    content_type='application/json',
                                    headers={'Authorization': auth_token})
         self.assertEqual(result.status_code, 200)
@@ -300,7 +288,7 @@ class BucketlistTestCase(unittest.TestCase):
         response = self.login_user()
         response_data = json.loads(response.data.decode())
         auth_token = response_data['access_token']
-        result = self.client().get('/bucketlist/1/items/1',
+        result = self.client().get('/api/v1/bucketlist/1/items/1',
                                    content_type='application/json',
                                    headers={'Authorization': 'auth_token'})
         self.assertEqual(result.status_code, 401)
@@ -318,7 +306,7 @@ class BucketlistTestCase(unittest.TestCase):
         response = self.login_user()
         response_data = json.loads(response.data.decode())
         auth_token = response_data['access_token']
-        result = self.client().get('/bucketlist/1/items/21',
+        result = self.client().get('/api/v1/bucketlist/1/items/21',
                                    content_type='application/json',
                                    headers={'Authorization': auth_token})
         self.assertEqual(result.status_code, 404)
@@ -335,7 +323,7 @@ class BucketlistTestCase(unittest.TestCase):
         response = self.login_user()
         response_data = json.loads(response.data.decode())
         auth_token = response_data['access_token']
-        result = self.client().get('/bucketlist/13/items/1',
+        result = self.client().get('/api/v1/bucketlist/13/items/1',
                                    content_type='application/json',
                                    headers={'Authorization': auth_token})
         self.assertEqual(result.status_code, 404)
@@ -353,7 +341,7 @@ class BucketlistTestCase(unittest.TestCase):
         response = self.login_user()
         response_data = json.loads(response.data.decode())
         auth_token = response_data['access_token']
-        result = self.client().put('/bucketlist/1',
+        result = self.client().put('/api/v1/bucketlist/1',
                                    data=json.dumps({"name": edited_item}),
                                    content_type='application/json',
                                    headers={'Authorization': auth_token})
@@ -372,7 +360,7 @@ class BucketlistTestCase(unittest.TestCase):
         response = self.login_user()
         response_data = json.loads(response.data.decode())
         auth_token = response_data['access_token']
-        result = self.client().put('/bucketlist/1',
+        result = self.client().put('/api/v1/bucketlist/1',
                                    data=json.dumps({"name": edited_item}),
                                    content_type='application/json',
                                    headers={'Authorization': 'auth_token'})
@@ -391,7 +379,7 @@ class BucketlistTestCase(unittest.TestCase):
         response = self.login_user()
         response_data = json.loads(response.data.decode())
         auth_token = response_data['access_token']
-        result = self.client().put('/bucketlist/5',
+        result = self.client().put('/api/v1/bucketlist/5',
                                    data=json.dumps({"name": edited_item}),
                                    content_type='application/json',
                                    headers={'Authorization': auth_token})
@@ -412,7 +400,7 @@ class BucketlistTestCase(unittest.TestCase):
         response = self.login_user()
         response_data = json.loads(response.data.decode())
         auth_token = response_data['access_token']
-        result = self.client().put('/bucketlist/1/items/1',
+        result = self.client().put('/api/v1/bucketlist/1/items/1',
                                    data=json.dumps({"name": edited_item}),
                                    content_type='application/json',
                                    headers={'Authorization': auth_token})
@@ -432,7 +420,7 @@ class BucketlistTestCase(unittest.TestCase):
         response = self.login_user()
         response_data = json.loads(response.data.decode())
         auth_token = response_data['access_token']
-        result = self.client().put('/bucketlist/1/items/1',
+        result = self.client().put('/api/v1/bucketlist/1/items/1',
                                    data=json.dumps({"name": edited_item}),
                                    content_type='application/json',
                                    headers={'Authorization': 'auth_token'})
@@ -452,7 +440,7 @@ class BucketlistTestCase(unittest.TestCase):
         response = self.login_user()
         response_data = json.loads(response.data.decode())
         auth_token = response_data['access_token']
-        result = self.client().put('/bucketlist/1/items/3',
+        result = self.client().put('/api/v1/bucketlist/1/items/3',
                                    data=json.dumps({"name": edited_item}),
                                    content_type='application/json',
                                    headers={'Authorization': auth_token})
@@ -472,7 +460,7 @@ class BucketlistTestCase(unittest.TestCase):
         response = self.login_user()
         response_data = json.loads(response.data.decode())
         auth_token = response_data['access_token']
-        result = self.client().put('/bucketlist/3/items/1',
+        result = self.client().put('/api/v1/bucketlist/3/items/1',
                                    data=json.dumps({"name": edited_item}),
                                    content_type='application/json',
                                    headers={'Authorization': auth_token})
@@ -491,7 +479,7 @@ class BucketlistTestCase(unittest.TestCase):
         response = self.login_user()
         response_data = json.loads(response.data.decode())
         auth_token = response_data['access_token']
-        result = self.client().delete('/bucketlist/1',
+        result = self.client().delete('/api/v1/bucketlist/1',
                                       data=json.dumps({"name": edited_item}),
                                       content_type='application/json',
                                       headers={'Authorization': auth_token})
@@ -510,7 +498,7 @@ class BucketlistTestCase(unittest.TestCase):
         response = self.login_user()
         response_data = json.loads(response.data.decode())
         auth_token = response_data['access_token']
-        result = self.client().delete('/bucketlist/1',
+        result = self.client().delete('/api/v1/bucketlist/1',
                                       data=json.dumps({"name": edited_item}),
                                       content_type='application/json',
                                       headers={'Authorization': 'auth_token'})
@@ -529,7 +517,7 @@ class BucketlistTestCase(unittest.TestCase):
         response = self.login_user()
         response_data = json.loads(response.data.decode())
         auth_token = response_data['access_token']
-        result = self.client().delete('/bucketlist/3',
+        result = self.client().delete('/api/v1/bucketlist/3',
                                       data=json.dumps({"name": edited_item}),
                                       content_type='application/json',
                                       headers={'Authorization': auth_token})
@@ -549,7 +537,7 @@ class BucketlistTestCase(unittest.TestCase):
         response = self.login_user()
         response_data = json.loads(response.data.decode())
         auth_token = response_data['access_token']
-        result = self.client().delete('/bucketlist/1/items/1',
+        result = self.client().delete('/api/v1/bucketlist/1/items/1',
                                       data=json.dumps({"name": edited_item}),
                                       content_type='application/json',
                                       headers={'Authorization': auth_token})
@@ -570,7 +558,7 @@ class BucketlistTestCase(unittest.TestCase):
         response = self.login_user()
         response_data = json.loads(response.data.decode())
         auth_token = response_data['access_token']
-        result = self.client().delete('/bucketlist/1/items/1',
+        result = self.client().delete('/api/v1/bucketlist/1/items/1',
                                       data=json.dumps({"name": edited_item}),
                                       content_type='application/json',
                                       headers={'Authorization': 'auth_token'})
@@ -590,7 +578,7 @@ class BucketlistTestCase(unittest.TestCase):
         response = self.login_user()
         response_data = json.loads(response.data.decode())
         auth_token = response_data['access_token']
-        result = self.client().delete('/bucketlist/1/items/5',
+        result = self.client().delete('/api/v1/bucketlist/1/items/5',
                                       data=json.dumps({"name": edited_item}),
                                       content_type='application/json',
                                       headers={'Authorization': auth_token})
@@ -610,7 +598,7 @@ class BucketlistTestCase(unittest.TestCase):
         response = self.login_user()
         response_data = json.loads(response.data.decode())
         auth_token = response_data['access_token']
-        result = self.client().delete('/bucketlist/45/items/1',
+        result = self.client().delete('/api/v1/bucketlist/45/items/1',
                                       data=json.dumps({"q": edited_item}),
                                       content_type='application/json',
                                       headers={'Authorization': auth_token})
@@ -630,7 +618,7 @@ class BucketlistTestCase(unittest.TestCase):
         response = self.login_user()
         response_data = json.loads(response.data.decode())
         auth_token = response_data['access_token']
-        result = self.client().get('/bucketlist/',
+        result = self.client().get('/api/v1/bucketlist/',
                                    data=json.dumps({"q": edited_item}),
                                    content_type='application/json',
                                    headers={'Authorization': auth_token})
@@ -650,7 +638,7 @@ class BucketlistTestCase(unittest.TestCase):
         response = self.login_user()
         response_data = json.loads(response.data.decode())
         auth_token = response_data['access_token']
-        result = self.client().get('/bucketlist/',
+        result = self.client().get('/api/v1/bucketlist/',
                                    data=json.dumps({"q": edited_item}),
                                    content_type='application/json',
                                    headers={'Authorization': 'auth_token'})
@@ -670,7 +658,7 @@ class BucketlistTestCase(unittest.TestCase):
         response = self.login_user()
         response_data = json.loads(response.data.decode())
         auth_token = response_data['access_token']
-        result = self.client().delete('/bucketlist/3',
+        result = self.client().delete('/api/v1/bucketlist/3',
                                       data=json.dumps({"name": edited_item}),
                                       content_type='application/json',
                                       headers={'Authorization': auth_token})

@@ -5,13 +5,15 @@ from flask_sqlalchemy import SQLAlchemy
 from flask import Flask, request, jsonify, abort, make_response, g, url_for, session
 from instance.config import app_config
 from passlib.apps import custom_app_context as pwd_context
-from itsdangerous import (TimedJSONWebSignatureSerializer
-                          as Serializer, BadSignature, SignatureExpired)
 
 db = SQLAlchemy()
 
 
 def create_app(config_name):
+    '''
+    Wraps the creation of a new Flask object, and returns it after it's loaded up
+    with configuration settings using app.config and connected to the DB using
+    '''
     from app.models import Bucketlist, BucketlistItem, User
     app = FlaskAPI(__name__, instance_relative_config=True)
     app.config.from_object(app_config[config_name])
@@ -19,8 +21,11 @@ def create_app(config_name):
     db.init_app(app)
 
 
-    @app.route('/auth/register', methods=['POST', 'GET'])
+    @app.route('/api/v1/auth/register', methods=['POST', 'GET'])
     def new_user():
+        '''
+        Function for registering user
+        '''
         user = User.query.filter_by(email=request.data['email']).first()
         if not user:
             try:
@@ -50,8 +55,11 @@ def create_app(config_name):
             return response
 
 
-    @app.route('/auth/login', methods=['POST', 'GET'])
+    @app.route('/api/v1/auth/login', methods=['POST'])
     def login():
+        '''
+        Function for login user
+        '''
         user = User.query.filter_by(email=request.data['email']).first()
         try:
             if user and user.verify_password(request.data['password']):
@@ -66,14 +74,18 @@ def create_app(config_name):
                 response = jsonify({
                     'message': 'Invalid email or password, Please try again.'
                 })
+                response.status_code = 401
                 return response
         except ValueError:
             response = jsonify({'error': 'Error!!'})
             return response
 
 
-    @app.route('/bucketlist/', methods=['GET'])
+    @app.route('/api/v1/bucketlist/', methods=['GET'])
     def buckelist_get():
+        '''
+        Function for retrieving a users bucketlist
+        '''
         auth_header = request.headers.get('Authorization')
         access_token = auth_header
         current_limit = 0
@@ -160,8 +172,11 @@ def create_app(config_name):
             return response
 
 
-    @app.route('/bucketlist/', methods=['POST'])
+    @app.route('/api/v1/bucketlist/', methods=['POST'])
     def bucketlists_post():
+        '''
+        Function for adding a users new bucketlist
+        '''
         auth_header = request.headers.get('Authorization')
         access_token = auth_header
         if access_token:
@@ -203,16 +218,22 @@ def create_app(config_name):
                 return response
 
 
-    @app.route('/bucketlist/', methods=['PUT', 'DELETE'])
-    def bucketlists_main_manupilate():
+    @app.route('/api/v1/bucketlist/', methods=['PUT', 'DELETE'])
+    def bucketlists_main_modify():
+        '''
+        Function for catching unallowed methods for bucketlist
+        '''
         response = jsonify({
             'message': 'Invalid Method for this link'
             })
         return response
 
 
-    @app.route('/bucketlist/<int:id>', methods=['GET', 'PUT', 'DELETE'])
-    def bucketlist_manipulation(id):
+    @app.route('/api/v1/bucketlist/<int:id>', methods=['GET', 'PUT', 'DELETE'])
+    def bucketlist_modify(id):
+        '''
+        Function for modifying a users bucketlist
+        '''
         auth_header = request.headers.get('Authorization')
         access_token = auth_header
         if access_token:
@@ -264,8 +285,11 @@ def create_app(config_name):
                 return response
 
 
-    @app.route('/bucketlist/<int:id>/items/', methods=['POST'])
+    @app.route('/api/v1/bucketlist/<int:id>/items/', methods=['POST'])
     def bucketlistsitem_post(id):
+        '''
+        Function for adding a users bucketlist item
+        '''
 
         auth_header = request.headers.get('Authorization')
         access_token = auth_header
@@ -326,8 +350,11 @@ def create_app(config_name):
                 return response
 
 
-    @app.route('/bucketlist/<int:id>/items/', methods=['GET'])
+    @app.route('/api/v1/bucketlist/<int:id>/items/', methods=['GET'])
     def bucketlistsitem_get(id):
+        '''
+        Function for retireving a users bucketlist item
+        '''
 
         auth_header = request.headers.get('Authorization')
         access_token = auth_header
@@ -368,8 +395,12 @@ def create_app(config_name):
                 return response
 
 
-    @app.route('/bucketlist/<int:id>/items/<int:item_id>', methods=['GET', 'PUT', 'DELETE'])
-    def bucketlistitems_manipulation(id, item_id,  **kwargs):
+    @app.route('/api/v1/bucketlist/<int:id>/items/<int:item_id>', methods=['GET', 'PUT', 'DELETE'])
+    def bucketlistitems_modify(id, item_id,  **kwargs):
+        '''
+        Function for modifying a users bucketlist item
+        '''
+
         auth_header = request.headers.get('Authorization')
         access_token = auth_header
         if access_token:
