@@ -2,8 +2,8 @@ import os
 from flask import Flask, abort, request, jsonify, g, url_for
 from app import db, create_app
 from flask_bcrypt import Bcrypt
-from flask import current_app
 import jwt
+from flask import current_app
 from datetime import datetime, timedelta
 from passlib.apps import custom_app_context as pwd_context
 from itsdangerous import (TimedJSONWebSignatureSerializer
@@ -130,5 +130,44 @@ class User(db.Model):
             return None # invalid token
         user = User.query.get(data['id'])
         return user
+
+    def password_is_valid(self, password):
+        """
+        Checks the password against it's hash to validates the user's password
+        """
+        return Bcrypt().check_password_hash(self.password, password)
+
+    def generate_token(self, user_id):
+        """Generates the access token to be used as the Authorization header"""
+        try:
+            # set up a payload with an expiration time
+            payload = {
+                'exp': datetime.utcnow() + timedelta(minutes=5),
+                'iat': datetime.utcnow(),
+                'sub': user_id
+            }
+            # encode the payload to get an byte string token
+            jwt_string = jwt.encode(
+                payload,
+                current_app.config.get('SECRET'),
+                algorithm='HS256'
+            )
+            return jwt_string
+
+        except Exception as e:
+            # return an error in string format if an exception occurs
+            return str(e)
+
+    @staticmethod
+    def decode_token(token):
+        """Decode the access token from the Authorization header."""
+        try:
+            payload = jwt.decode(token, current_app.config.get('SECRET'))
+            return payload['sub']
+        except jwt.ExpiredSignatureError:
+            return "Expired token. Please log in to get a new token"
+        except jwt.InvalidTokenError:
+            return "Invalid token. Please register or login"
+
 
    

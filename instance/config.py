@@ -7,6 +7,7 @@ class Config(object):
     SECRET = os.getenv('SECRET')
     SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL')
     JSON_SORT_KEYS = False
+    PRESERVE_CONTEXT_ON_EXCEPTION = False
 
 class DevelopmentConfig(Config):
     """Configurations for Development."""
