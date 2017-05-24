@@ -7,7 +7,7 @@ from instance.config import app_config
 from passlib.apps import custom_app_context as pwd_context
 from itsdangerous import (TimedJSONWebSignatureSerializer
                           as Serializer, BadSignature, SignatureExpired)
-# initialize sql-alchemy
+
 db = SQLAlchemy()
 
 
@@ -76,59 +76,80 @@ def create_app(config_name):
     def buckelist_get():
         auth_header = request.headers.get('Authorization')
         access_token = auth_header
+        current_limit = 0
+        selected_page = 0
         if access_token:
             user_id = User.decode_token(access_token)
             if not isinstance(user_id, str):
                 q = request.args.get('q')
                 limit = request.args.get('limit')
                 page = request.args.get('page')
-                if q:
-                    try:
-                        bucketlists = Bucketlist.query.filter_by(name=q, user_id=user.id).one()
-                        results = []
-
-                        for bucketlist in bucketlists:
-                            obj = {
-                                'id': bucketlist.id,
-                                'bucketlist id':bucketlist.bucketlist_id,
-                                'name': bucketlist.name,
-                                'date_created': bucketlist.date_created,
-                                'date_modified': bucketlist.date_modified,
-                                'User id': g.user.email,
-                                }
-                            results.append(obj)
-                        response = jsonify(results)
-                        response.status_code = 200
-                        return response
-                    except:
-                        response = jsonify({'message': 'item not found'})
-                        response.status_code = 404
+                if limit:
+                    if limit.isdigit():
+                        current_limit = int(limit)
+                    else:
+                        response = jsonify({'message': 'Invalid limit'})
+                        response.status_code = 400
                         return response
                 else:
-                    bucketlists = Bucketlist.get_bucketlist(user_id)
+                    current_limit = 20
+                if page:
+                    if page.isdigit():
+                        selected_page = int(page)
+                    else:
+                        response = jsonify({'message': 'Invalid page number'})
+                        response.status_code = 400
+                        return response
+                else:
+                    selected_page = 1
+                if q:
+                    # try:
+                    q = q.lower()
+                    bucketlists = Bucketlist.query.filter(Bucketlist.name.like(
+                        '%{}%'.format(q))).filter_by(user_id=user_id).paginate(page=selected_page,
+                                                                               per_page=current_limit,
+                                                                               error_out=True)
                     results = []
                     for bucketlist in bucketlists:
-                        bucketlistresults = []
-                        bucketlistsitems = BucketlistItem.get_items(bucketlist.id)
-                        for bucketlistitem in bucketlistsitems:
-                            obj = {
-                                'id': bucketlistitem.id,
-                                'name': bucketlistitem.name,
-                                'bucketlist' : bucketlistitem.bucketlist_id
-                                }
-                            bucketlistresults.append(obj)
                         obj = {
-                            'item id':bucketlist.bucketlist_id,
+                            'id': bucketlist.id,
+                            'bucketlist id':bucketlist.bucketlist_id,
                             'name': bucketlist.name,
-                            'items':bucketlistresults,
                             'date_created': bucketlist.date_created,
                             'date_modified': bucketlist.date_modified,
-                            'Created By' : user_id,
+                            'User id': user_id,
                             }
                         results.append(obj)
                     response = jsonify(results)
                     response.status_code = 200
                     return response
+
+                bucketlists = Bucketlist.query.filter_by(user_id=user_id).paginate(page=selected_page,
+                                                                                   per_page=current_limit,
+                                                                                   error_out=True)
+                results = []
+                for bucketlist in bucketlists.items:
+                    bucketlistresults = []
+                    bucketlistsitems = BucketlistItem.get_items(bucketlist.id)
+                    for bucketlistitem in bucketlistsitems:
+                        obj = {
+                            'id': bucketlistitem.id,
+                            'name': bucketlistitem.name,
+                            'bucketlist' : bucketlistitem.bucketlist_id
+                            }
+                        bucketlistresults.append(obj)
+                    obj = {
+                        'item id':bucketlist.bucketlist_id,
+                        'name': bucketlist.name,
+                        'items':bucketlistresults,
+                        'date_created': bucketlist.date_created,
+                        'date_modified': bucketlist.date_modified,
+                        'Created By' : user_id,
+                        }
+                    results.append(obj)
+                response = jsonify(results)
+                response.status_code = 200
+                return response
             else:
                 response = jsonify({'message': 'Invalid token or expired'})
                 response.status_code = 401
@@ -318,7 +339,6 @@ def create_app(config_name):
                     user_bucketlist = Bucketlist.query.filter_by(bucketlist_id=id,
                                                                  user_id=user_id).one()
                     if not user_bucketlist:
-                        # Raise an HTTPException with a 404 not found status code
                         response = jsonify({'message': 'Bucketlist does not exist'})
                         response.status_code = 404
                         return response
@@ -404,144 +424,8 @@ def create_app(config_name):
                 response.status_code = 401
                 return response
 
-    # @app.route('/bucketlist/', methods=['POST', 'GET'])
-    # @auth.login_required
-    # def bucketlists():
-
-    #     if access_token:
-    #         user_id = User.decode_token(access_token)
-    #         if not isinstance(user_id, str):
-
-    #             user = User.query.filter_by(id = user_id).first()
-    #             user_buckelists_list = []
-    #             user_buckelists = Bucketlist.query.filter_by(user_id = user.id).all()
-        
-
-    #             for user_buckelist in user_buckelists:
-    #                 user_buckelists_list.append(user_buckelist)
-
-    #             user_bucketlist_id = len(user_buckelists_list)+1
-
-    #             if request.method == "POST":
-    #                 name = str(request.data.get('name', ''))
-    #                 if name:
-    #                     bucketlist = Bucketlist(bucketlist_id=user_bucketlist_id, name=name, user_id=user.id)
-    #                     bucketlist.save()
-    #                     response = jsonify({
-    #                         'id': bucketlist.id,
-    #                         'bucketlist id':bucketlist.bucketlist_id,
-    #                         'name': bucketlist.name,
-    #                         'date_created': bucketlist.date_created,
-    #                         'date_modified': bucketlist.date_modified,
-    #                         })
-    #                     response.status_code = 201
-    #                     return response
-    #             else:
-    #                 # GET
-    #                 q = request.args.get('q')
-    #                 limit = request.args.get('limit')
-    #                 page = request.args.get('page')
-    #                 if q:
-    #                     bucketlists = Bucketlist.query.filter_by(name=q, user_id=user.id)
-    #                     results = []
-
-    #                     for bucketlist in bucketlists:
-    #                         obj = {
-    #                             'id': bucketlist.id,
-    #                             'bucketlist id':bucketlist.bucketlist_id,
-    #                             'name': bucketlist.name,
-    #                             'date_created': bucketlist.date_created,
-    #                             'date_modified': bucketlist.date_modified,
-    #                             'User id': g.user.email,
-    #                             }
-    #                         results.append(obj)
-    #                     response = jsonify(results)
-    #                     response.status_code = 200
-    #                     return response
-
-    #                 elif limit:
-    #                     bucketlists = Bucketlist.query.filter_by(name=q, user_id=user.id)
-    #                     results = []
-
-    #                     for bucketlist in bucketlists:
-    #                         obj = {
-    #                             'id': bucketlist.id,
-    #                             'bucketlist id':bucketlist.bucketlist_id,
-    #                             'name': bucketlist.name,
-    #                             'date_created': bucketlist.date_created,
-    #                             'date_modified': bucketlist.date_modified,
-    #                             'User id' : g.user.email,
-    #                             }
-    #                         results.append(obj)
-    #                     if page:
-    #                         if page.isdigit():
-    #                             old_page = page - 1
-    #                             old_limit = old_page * limit
-    #                             next_limit = page * limit
-    #                             if len(results) > next_limit:
-    #                                 new_page = results[old_limit:next_limit]
-    #                                 response = jsonify(new_page)
-    #                                 response.status_code = 200
-    #                                 return response
-    #                             elif len(results) > old_limit and len(results) < next_limit:
-    #                                 new_page = results[old_limit:]
-    #                                 response = jsonify(new_page)
-    #                                 response.status_code = 200
-    #                                 return response
-    #                             else:
-    #                                 return 404
-    #                         else:
-    #                             return 404
 
 
-    #                 else:
-    #                     bucketlists = Bucketlist.get_bucketlist(user.id)
-    #                     results = []
-    #                     limit = 20
-
-    #                     for bucketlist in bucketlists:
-    #                         bucketlistresults = []
-    #                         bucketlistsitems = BucketlistItem.get_items(bucketlist.id)
-    #                         for bucketlistitem in bucketlistsitems:
-    #                             obj = {
-    #                                 'id': bucketlistitem.id,
-    #                                 'name': bucketlistitem.name,
-    #                                 'bucketlist' : bucketlistitem.bucketlist_id
-    #                                 }
-    #                             bucketlistresults.append(obj)
-    #                         obj = {
-    #                             'item id':bucketlist.bucketlist_id,
-    #                             'name': bucketlist.name,
-    #                             'items':bucketlistresults,
-    #                             'date_created': bucketlist.date_created,
-    #                             'date_modified': bucketlist.date_modified,
-    #                             'Created By' : g.user.email,
-    #                             }
-    #                         results.append(obj)
-    #                     if page:
-    #                         if page.isdigit():
-    #                             old_page = int(page) - 1
-    #                             old_limit = old_page * limit
-    #                             next_limit = int(page) * limit
-    #                             if len(results) > next_limit:
-    #                                 new_page = results[old_limit:next_limit]
-    #                                 response = jsonify(new_page)
-    #                                 response.status_code = 200
-    #                                 return response
-    #                             elif len(results) > old_limit and len(results) < next_limit:
-    #                                 new_page = results[old_limit:]
-    #                                 response = jsonify(new_page)
-    #                                 response.status_code = 200
-    #                                 return response
-    #                             else:
-    #                                 return 404
-    #                         else:
-    #                             return 404
-    #                     else:
-    #                         this_page = results[:limit]
-    #                         response = jsonify(this_page)
-    #                         response.status_code = 200
-    #                         return response
 
 
 

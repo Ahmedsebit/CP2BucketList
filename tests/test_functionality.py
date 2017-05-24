@@ -623,10 +623,71 @@ class BucketlistTestCase(unittest.TestCase):
         response_data = json.loads(response.data.decode())
         auth_token = response_data['access_token']
         result = self.client().delete('/bucketlist/45/items/1',
+                                      data=json.dumps({"q": edited_item}),
+                                      content_type='application/json',
+                                      headers={'Authorization': auth_token})
+        self.assertEqual(result.status_code, 404)
+
+
+    def test_find_bucketlist(self):
+        """
+        Bucketlist item GET request API functionality test. The test checks if an item in the
+        bucketlist can be retrieved by its id through the GET request. The test returns 200
+        for succesful retrieveing.
+        """
+        self.post_bucketlist()
+        self.post_item_bucketlist()
+        self.register_user()
+        edited_item = 'edited item'
+        response = self.login_user()
+        response_data = json.loads(response.data.decode())
+        auth_token = response_data['access_token']
+        result = self.client().get('/bucketlist/',
+                                   data=json.dumps({"q": edited_item}),
+                                   content_type='application/json',
+                                   headers={'Authorization': auth_token})
+        self.assertEqual(result.status_code, 200)
+
+
+    def test_find_bucketlist_unauth(self):
+        """
+        Bucketlist item GET request API functionality test. The test checks if an item in the
+        bucketlist can be retrieved by its id through the GET request. The test returns 200
+        for succesful retrieveing.
+        """
+        self.post_bucketlist()
+        self.post_item_bucketlist()
+        self.register_user()
+        edited_item = 'edited item'
+        response = self.login_user()
+        response_data = json.loads(response.data.decode())
+        auth_token = response_data['access_token']
+        result = self.client().get('/bucketlist/',
+                                   data=json.dumps({"q": edited_item}),
+                                   content_type='application/json',
+                                   headers={'Authorization': 'auth_token'})
+        self.assertEqual(result.status_code, 401)
+
+
+    def test_find_bucketlist_notfound(self):
+        """
+        Bucketlist item GET request API functionality test. The test checks if an item in the
+        bucketlist can be retrieved by its id through the GET request. The test returns 200
+        for succesful retrieveing.
+        """
+        self.post_bucketlist()
+        self.post_item_bucketlist()
+        self.register_user()
+        edited_item = 'edited item'
+        response = self.login_user()
+        response_data = json.loads(response.data.decode())
+        auth_token = response_data['access_token']
+        result = self.client().delete('/bucketlist/3',
                                       data=json.dumps({"name": edited_item}),
                                       content_type='application/json',
                                       headers={'Authorization': auth_token})
         self.assertEqual(result.status_code, 404)
+
 
 
 

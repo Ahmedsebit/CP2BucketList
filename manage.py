@@ -7,16 +7,22 @@ from app import models
 app = create_app(config_name=os.getenv('APP_SETTINGS'))
 migrate = Migrate(app, db)
 manager = Manager(app)
-# createdb = db.create_all()
-# dropdb = db.drop_all()
+
 
 @manager.command
-def createdb():
-    db.create_all()
+def create_db():
+    os.system('createdb flask_api')
+    os.system('createdb test_db')
+    print('Databases created')
+
 
 @manager.command
-def dropdb():
-    db.drop_all()
+def drop_db():
+    os.system(
+        'psql -c "DROP DATABASE IF EXISTS test_db"')
+    os.system(
+        'psql -c "DROP DATABASE IF EXISTS flask_api"')
+    print('Databases dropped')
 
 manager.add_command('db', MigrateCommand)
 
