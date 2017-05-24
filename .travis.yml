@@ -8,8 +8,8 @@ dependencies:
 
 test:
   override:
-    - createdb bucketlist_db;
-    - createdb test_db;
+    - createdb;
+    - createdb;
     - rm -rf migrations
     - python manage.py databases init
     - python manage.py databases migrate
