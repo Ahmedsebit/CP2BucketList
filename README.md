@@ -42,17 +42,17 @@ $ python manage.py db upgrade
 $ python manage.py runserver
 
 Endpoints
-| URL Endpoint | HTTP Methods | Summary |
-
-| `/api/v1/auth/register` |`POST`  | Register a new user|
-|  `/api/v1/auth/login` |`POST` | Login and retrieve token|
-| `/api/v1/bucketlist/` |`POST` | Create a new Bucketlist |
-| `/api/v1/bucketlist/` | `GET` | Retrieve all bucketlists for user |
-| `/api/v1/bucketlist?limit=2&page=1` | `GET` | Retrieve one bucketlist per page |
-| `/api/v1/bucketlist/<id>/` | `GET` |  Retrieve bucket list details |
-| `/api/v1/bucketlist/<id>/` | `PUT` | Update bucket list details |
-| `/api/v1/bucketlist/<id>/` | `DELETE` | Delete a bucket list |
-| `/api/v1/bucketlist/<id>/items/` | `POST` |  Create items in a bucket list |
+| Endpoints  | Request | command |
+| ------------- | ------------- | ------------- |
+| `/api/v1/auth/register`                    |`POST` | Register a new user|
+|  `/api/v1/auth/login`                      |`POST` | Login and retrieve token|
+| `/api/v1/bucketlist/`                      |`POST` | Create a new Bucketlist |
+| `/api/v1/bucketlist/`                      | `GET` | Retrieve all bucketlists for user |
+| `/api/v1/bucketlist?limit=2&page=1`        | `GET` | Retrieve one bucketlist per page |
+| `/api/v1/bucketlist/<id>/`                 | `GET` |  Retrieve bucket list details |
+| `/api/v1/bucketlist/<id>/`                 | `PUT` | Update bucket list details |
+| `/api/v1/bucketlist/<id>/`                 | `DELETE` | Delete a bucket list |
+| `/api/v1/bucketlist/<id>/items/`           | `POST` |  Create items in a bucket list |
 | `/api/v1/bucketlist/<id>/items/<item_id>/` | `DELETE`| Delete a item in a bucket list|
 | `/api/v1/bucketlist/<id>/items/<item_id>/` | `PUT`| update a bucket list item details|
 
