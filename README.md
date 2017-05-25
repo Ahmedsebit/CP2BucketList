@@ -41,7 +41,7 @@ $ python manage.py db upgrade
 
 $ python manage.py runserver
 
-Endpoints
+# Endpoints
 | Endpoints  | Request | command |
 | ------------- | ------------- | ------------- |
 | `/api/v1/auth/register`                    |`POST` | Register a new user|
