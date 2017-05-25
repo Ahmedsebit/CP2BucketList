@@ -28,7 +28,7 @@ In the command promt run to get the enviroment configurations
 $ pip install -r requirements.txt
 Launching the program
 
-Create a database
+# Create a database
 
 $ python manage.py createdb
 
@@ -37,9 +37,10 @@ $ python manage.py db init
 $ python manage.py db migrate
 $ python manage.py db upgrade
 
-Runserver and add the endpoints to postman
+# Runserver and add the endpoints to postman
 
 $ python manage.py runserver
+
 Endpoints
 | URL Endpoint | HTTP Methods | Summary |
 
@@ -56,6 +57,6 @@ Endpoints
 | `/api/v1/bucketlist/<id>/items/<item_id>/` | `PUT`| update a bucket list item details|
 
 
-Running the tests
+# Running the tests
 
  $ nosetests
