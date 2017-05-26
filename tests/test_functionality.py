@@ -18,7 +18,6 @@ class BucketlistTestCase(unittest.TestCase):
             db.session.close()
             db.drop_all()
             db.create_all()
-        
 
 
     def register_user(self, email="user@test.com", password="test1234"):
