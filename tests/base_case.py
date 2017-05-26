@@ -3,8 +3,7 @@ import os
 from flask import json, jsonify
 from app.app import create_app, db
 
-
-class BucketlistBaseTestCase(unittest.TestCase):
+class BucketlistTestCase(unittest.TestCase):
     '''
     This class represents the bucketlist test case
     '''
@@ -33,8 +32,8 @@ class BucketlistBaseTestCase(unittest.TestCase):
 
 
     def post_bucketlist(self, name="new_item"):
-        self.base.register_user()
-        response = self.base.login_user()
+        self.register_user()
+        response = self.login_user()
         response_data = json.loads(response.data.decode())
         self.auth_token = response_data['access_token']
 
@@ -44,9 +43,9 @@ class BucketlistBaseTestCase(unittest.TestCase):
                                   headers={'Authorization': self.auth_token})
 
     def post_item_bucketlist(self, name="new_bucketlist_item"):
-        self.base.post_bucketlist()
-        self.base.register_user()
-        response = self.base.login_user()
+        self.post_bucketlist()
+        self.register_user()
+        response = self.login_user()
         response_data = json.loads(response.data.decode())
         self.auth_token = response_data['access_token']
 
@@ -56,9 +55,9 @@ class BucketlistBaseTestCase(unittest.TestCase):
                                   headers={'Authorization': self.auth_token})
 
     def post_item_nonexistingbucketlist(self, name="new_bucketlist_item"):
-        self.base.post_bucketlist()
-        self.base.register_user()
-        response = self.base.login_user()
+        self.post_bucketlist()
+        self.register_user()
+        response = self.login_user()
         response_data = json.loads(response.data.decode())
         self.auth_token = response_data['access_token']
 
