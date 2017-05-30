@@ -1,7 +1,6 @@
 import os
-from flask import Flask, abort, request, jsonify, g, url_for
-from app import db, create_app
-from flask_bcrypt import Bcrypt
+from flask import Flask, abort, request, jsonify, url_for
+from app.app import db, create_app
 import jwt
 from flask import current_app
 from datetime import datetime, timedelta
@@ -160,13 +159,6 @@ class User(db.Model):
         '''
         return pwd_context.verify(entered_password, self.password)
 
-
-    def password_is_valid(self, password):
-        """
-        Checks the password against it's hash to validates the user's password
-        """
-        return Bcrypt().check_password_hash(self.password, password)
-
     def generate_token(self, user_id):
         '''
         Generates the access token to be used as the Authorization header
@@ -174,7 +166,7 @@ class User(db.Model):
         try:
             # set up a payload with an expiration time
             payload = {
-                'exp': datetime.utcnow() + timedelta(minutes=5),
+                'exp': datetime.utcnow() + timedelta(minutes=10),
                 'iat': datetime.utcnow(),
                 'sub': user_id
             }

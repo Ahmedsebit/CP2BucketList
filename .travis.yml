@@ -1,14 +1,22 @@
-language: python
+machine:
+  python:
+    version: 3.6.1
+  environment:
+    FLASK_APP: run.py
+    SECRET: Testing
+    APP_SETTTINGS: development
+    DATABASE_URL: postgresql://localhost/buckets
+    
+dependencies:
+  post:
+    - pip install -r requirements.txt
 
-python:
-  - "3.6"
-
-install:
-  - pip install -r requirements.txt
-  - pip install coveralls
-
-before_script:
-  - psql -c 'create database test_db;' -U postgres
-
-script:
-  - nosetests --with-coverage
+test:
+  override:
+    - createdb;
+    - createdb;
+    - rm -rf migrations
+    - python manage.py db init
+    - python manage.py db migrate
+    - python manage.py db upgrade
+    - nosetests -v
